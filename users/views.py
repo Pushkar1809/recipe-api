@@ -11,6 +11,8 @@ from .models import Profile
 from recipe.serializers import RecipeSerializer
 from . import serializers
 
+from .tasks import send_email_task
+
 
 User = get_user_model()
 
@@ -26,6 +28,7 @@ class UserRegisterationAPIView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        send_email_task.delay('New User', "New user created successfully", user.email)
         token = RefreshToken.for_user(user)
         data = serializer.data
         data['tokens'] = {
@@ -46,6 +49,7 @@ class UserLoginAPIView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
+        send_email_task.delay('Welcome', "Welcome back to the site", user.email)
         serializer = serializers.CustomUserSerializer(user)
         token = RefreshToken.for_user(user)
         data = serializer.data
@@ -124,6 +128,8 @@ class UserBookmarkAPIView(ListCreateAPIView):
         user = User.objects.get(id=pk)
         user_profile = get_object_or_404(self.profile, user=user)
         recipe = Recipe.objects.get(id=request.data['id'])
+        if user_profile and recipe:
+            send_email_task.delay('New Bookmark', "New bookmark added to recipe, {}".format(recipe.name), user.email)
         if user_profile:
             user_profile.bookmarks.add(recipe)
             return Response(status=status.HTTP_200_OK)
