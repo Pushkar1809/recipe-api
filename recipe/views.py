@@ -7,7 +7,12 @@ from .models import Recipe, RecipeLike
 from .serializers import RecipeLikeSerializer, RecipeSerializer
 from .permissions import IsAuthorOrReadOnly
 from .tasks import send_email_task
+from rest_framework.pagination import PageNumberPagination
 
+class RecipePagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class RecipeListAPIView(generics.ListAPIView):
     """
@@ -17,6 +22,7 @@ class RecipeListAPIView(generics.ListAPIView):
     serializer_class = RecipeSerializer
     permission_classes = (AllowAny,)
     filterset_fields = ('category__name', 'author__username')
+    pagination_class = RecipePagination
 
 
 class RecipeCreateAPIView(generics.CreateAPIView):
