@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'django_rest_passwordreset',
-    'django_celery_email',
+    'djcelery_email',
     'django_celery_results',
 
     # Local apps
@@ -40,7 +40,7 @@ INSTALLED_APPS = [
 ]
 
 # Email Settings
-EMAIL_BACKEND = 'django_celery_email.backends.CeleryEmailBackend'
+EMAIL_BACKEND = 'djcelery_email.backends.CeleryEmailBackend'
 #add your host of the email here in this case its Gmail so we are going to use Gmail host
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
