@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY', 'secret')
 
 
 # Application definition
@@ -31,11 +31,26 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'django_rest_passwordreset',
+    'django_celery_email',
+    'django_celery_results',
 
     # Local apps
     'users',
     'recipe',
 ]
+
+# Email Settings
+EMAIL_BACKEND = 'django_celery_email.backends.CeleryEmailBackend'
+#add your host of the email here in this case its Gmail so we are going to use Gmail host
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+#add the port number of the email server
+EMAIL_PORT = 587
+#add your gamil here
+EMAIL_HOST_USER = 'testrecipe00@gmail.com'
+#add your password here
+EMAIL_HOST_PASSWORD = 'test@recipe123'
+DEFAULT_FROM_EMAIL='Celery testrecipe00@gmail.com'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -133,15 +148,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.CustomUser'
 
 CORS_ORIGIN_ALLOW_ALL = True
-
-
-# Email config
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = config('EMAIL_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_PASSWORD')
 
 
 REST_FRAMEWORK = {
