@@ -1,0 +1,58 @@
+version: "3"
+
+services:
+
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_NAME: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  django:
+    container_name: django
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/user/src/app/
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=secret
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    depends_on:
+      - db
+    network_mode: host
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+      
+  celery:
+    build: .
+    command: celery -A config worker --loglevel=info 
+    depends_on:
+      redis:
+        condition: service_started
+
+  celery-beat:
+    build: .
+    command: celery -A config beat --loglevel=info
+    depends_on:
+      redis:
+        condition: service_started
