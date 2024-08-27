@@ -13,6 +13,10 @@ from . import serializers
 
 from .tasks import send_email_task
 
+import logging
+
+logger = logging.getLogger("users.views")
+
 
 User = get_user_model()
 
@@ -35,6 +39,7 @@ class UserRegisterationAPIView(GenericAPIView):
             'refresh': str(token),
             'access': str(token.access_token)
         }
+        logger.info("New user created successfully")
         return Response(data, status=status.HTTP_201_CREATED)
 
 
@@ -57,6 +62,7 @@ class UserLoginAPIView(GenericAPIView):
             'refresh': str(token),
             'access': str(token.access_token)
         }
+        logger.info("User with email {} logged in successfully".format(user.email))
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -71,8 +77,10 @@ class UserLogoutAPIView(GenericAPIView):
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
+            logger.info("User with email {} logged out successfully".format(request.user.email))
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
+            logger.error("Error while logging out user with email {}".format(request.user.email))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -128,10 +136,11 @@ class UserBookmarkAPIView(ListCreateAPIView):
         user = User.objects.get(id=pk)
         user_profile = get_object_or_404(self.profile, user=user)
         recipe = Recipe.objects.get(id=request.data['id'])
+            
         if user_profile and recipe:
-            send_email_task.delay('New Bookmark', "New bookmark added to recipe, {}".format(recipe.name), user.email)
-        if user_profile:
             user_profile.bookmarks.add(recipe)
+            logger.info("Recipe with id {} bookmarked by user with email {}".format(recipe.id, user.email))
+            send_email_task.delay('New Bookmark', "New bookmark added to recipe, {}".format(recipe.name), user.email)
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -139,8 +148,9 @@ class UserBookmarkAPIView(ListCreateAPIView):
         user = User.objects.get(id=pk)
         user_profile = get_object_or_404(self.profile, user=user)
         recipe = Recipe.objects.get(id=request.data['id'])
-        if user_profile:
+        if user_profile and recipe:
             user_profile.bookmarks.remove(recipe)
+            logger.info("Recipe with id {} removed from bookmarks by user with email {}".format(recipe.id, user.email))
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 

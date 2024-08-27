@@ -9,6 +9,10 @@ from .permissions import IsAuthorOrReadOnly
 from .tasks import send_email_task
 from rest_framework.pagination import PageNumberPagination
 
+import logging
+
+logger = logging.getLogger("recipe.views")
+
 class RecipePagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -35,6 +39,7 @@ class RecipeCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         send_email_task.delay('New Recipe', "New recipe created successfully", self.request.user.email)
+        logger.info("New recipe created successfully")
         serializer.save(author=self.request.user)
 
 
@@ -61,6 +66,7 @@ class RecipeLikeAPIView(generics.CreateAPIView):
         if created:
             send_email_task.delay('New Like', "New like on recipe, {}".format(recipe.description), request.user.email)
             new_like.save()
+            logger.info("Recipe with id {} liked by user with email {}".format(recipe.id, request.user.email))
             return Response(status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -69,6 +75,7 @@ class RecipeLikeAPIView(generics.CreateAPIView):
         like = RecipeLike.objects.filter(user=request.user, recipe=recipe)
         if like.exists():
             like.delete()
+            logger.info("Recipe with id {} unliked by user with email {}".format(recipe.id, request.user.email))
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
