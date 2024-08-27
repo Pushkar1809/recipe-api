@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from .models import Recipe, RecipeLike
 from .serializers import RecipeLikeSerializer, RecipeSerializer
 from .permissions import IsAuthorOrReadOnly
+from .tasks import send_email_task
 
 
 class RecipeListAPIView(generics.ListAPIView):
@@ -27,6 +28,7 @@ class RecipeCreateAPIView(generics.CreateAPIView):
     permission_classes = (IsAuthenticated,)
 
     def perform_create(self, serializer):
+        send_email_task.delay('New Recipe', "New recipe created successfully", self.request.user.email)
         serializer.save(author=self.request.user)
 
 
@@ -51,6 +53,7 @@ class RecipeLikeAPIView(generics.CreateAPIView):
         new_like, created = RecipeLike.objects.get_or_create(
             user=request.user, recipe=recipe)
         if created:
+            send_email_task.delay('New Like', "New like on recipe, {}".format(recipe.description), request.user.email)
             new_like.save()
             return Response(status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_BAD_REQUEST)
